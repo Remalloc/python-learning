@@ -3,94 +3,88 @@
 from xml.parsers.expat import ParserCreate
 import re
 
-nowday=None
-week=['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+nowdays = None
+week = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-def analyze_lable(attrs):
-    result = {}
+
+def analyze_lable(attrs, result):
     def get_location():
-        if not attrs.get('location'):
+        if not (attrs.get('city') and attrs.get('country')):
             return None
-        result['city']= attrs.get('city')
-        result['country']=attrs.get('country')
+        result['city'] = attrs.get('city')
+        result['country'] = attrs.get('country')
         return result
+
     def get_nowday():
-        if not attrs.get('condition'):
+        global nowdays
+        if not attrs.get('date') or nowdays:
             return None
-        global nowday
-        nowday=re.split(',',attrs['date'])[0]
-        result['nowday']=nowday
+        nowdays = re.split(',', attrs['date'])[0]
+        result['nowdays'] = nowdays
         return result
+
     def get_today():
-        if not (nowday and attrs.get('forecast')):
+        if not (nowdays == attrs.get('day', -1)):
             return None
-        today={}
-        today['text']=attrs.get('text')
-        today['low']=attrs.get('low')
-        today['high']=attrs.get('high')
-        result['today']=today
+        today = {}
+        today['text'] = attrs.get('text')
+        today['low'] = int(attrs.get('low'))
+        today['high'] = int(attrs.get('high'))
+        result['today'] = today
         return result
+
     def get_tomorrow():
-        if not (nowday and attrs.get('forecast')):
+        if not (nowdays and attrs.get('day')) or result.get('tomorrow'):
             return None
         for i in range(len(week)):
-            if week[i]==nowday:
-                if week[(i+1)%len(week)]==attrs.get('day'):
+            if week[i] == nowdays:
+                if week[(i + 1) % len(week)] == attrs.get('day'):
                     break
-        if i==len(week)-1:
+        if i == len(week) - 1:
             return None
-        tomorrow={}
-        tomorrow['text']=attrs.get('text')
-        tomorrow['low']=attrs.get('low')
-        tomorrow['high']=attrs.get('high')
-        tomorrow['tomorrow']=tomorrow
+        tomorrow = {}
+        tomorrow['text'] = attrs.get('text')
+        tomorrow['low'] = int(attrs.get('low'))
+        tomorrow['high'] = int(attrs.get('high'))
+        result['tomorrow'] = tomorrow
+
         return result
+
+    get_location()
+    get_nowday()
+    get_today()
+    get_tomorrow()
+    return result
 
 
 class WeatherSaxHandler(object):
     def __init__(self):
-        self.flag=False
-        self.result={}
-    def start_element(self,name,attrs):
-        judge=get_location(attrs)
-        if judge:
-            self.result={**self.result,**judge}
-            print(judge)
-        # values=attrs.values()
-        # if judge_location()
+        self.flag = False
+        self.result = {}
 
-    def end_element(self,name):
+    def start_element(self, name, attrs):
+        analyze_lable(attrs, self.result)
+
+    def end_element(self, name):
         pass
-    def char_data(self,text):
+
+    def char_data(self, text):
         pass
 
     def get_result(self):
         return self.result
 
+
 def parse_weather(xml):
-    handler=WeatherSaxHandler()
-    parser=ParserCreate()
-    parser.StartElementHandler=handler.start_element
+    handler = WeatherSaxHandler()
+    parser = ParserCreate()
+    parser.StartElementHandler = handler.start_element
     parser.EndElementHandler = handler.end_element
     parser.CharacterDataHandler = handler.char_data
     parser.Parse(xml)
 
     return handler.get_result()
 
-    # return {
-    #     'city': 'Beijing',
-    #     'country': 'China',
-    #     'today': {
-    #         'text': 'Partly Cloudy',
-    #         'low': 20,
-    #         'high': 33
-    #     },
-    #     'tomorrow': {
-    #         'text': 'Sunny',
-    #         'low': 21,
-    #         'high': 34
-    #     }
-    # }
 
 # 测试:
 data = r'''<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
@@ -118,12 +112,12 @@ data = r'''<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 </rss>
 '''
 weather = parse_weather(data)
-# assert weather['city'] == 'Beijing', weather['city']
-# assert weather['country'] == 'China', weather['country']
-# assert weather['today']['text'] == 'Partly Cloudy', weather['today']['text']
-# assert weather['today']['low'] == 20, weather['today']['low']
-# assert weather['today']['high'] == 33, weather['today']['high']
-# assert weather['tomorrow']['text'] == 'Sunny', weather['tomorrow']['text']
-# assert weather['tomorrow']['low'] == 21, weather['tomorrow']['low']
-# assert weather['tomorrow']['high'] == 34, weather['tomorrow']['high']
+assert weather['city'] == 'Beijing', weather['city']
+assert weather['country'] == 'China', weather['country']
+assert weather['today']['text'] == 'Partly Cloudy', weather['today']['text']
+assert weather['today']['low'] == 20, weather['today']['low']
+assert weather['today']['high'] == 33, weather['today']['high']
+assert weather['tomorrow']['text'] == 'Sunny', weather['tomorrow']['text']
+assert weather['tomorrow']['low'] == 21, weather['tomorrow']['low']
+assert weather['tomorrow']['high'] == 34, weather['tomorrow']['high']
 print('Weather:', str(weather))
