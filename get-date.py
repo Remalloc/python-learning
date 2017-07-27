@@ -15,7 +15,7 @@ def analyze_lable(attrs, result):
         result['country'] = attrs.get('country')
         return result
 
-    def get_nowday():
+    def get_nowdays():
         global nowdays
         if not attrs.get('date') or nowdays:
             return None
@@ -24,7 +24,7 @@ def analyze_lable(attrs, result):
         return result
 
     def get_today():
-        if not (nowdays == attrs.get('day', -1)):
+        if not (nowdays == attrs.get('day', -1)) or result.get('today'):
             return None
         today = {}
         today['text'] = attrs.get('text')
@@ -47,11 +47,10 @@ def analyze_lable(attrs, result):
         tomorrow['low'] = int(attrs.get('low'))
         tomorrow['high'] = int(attrs.get('high'))
         result['tomorrow'] = tomorrow
-
         return result
 
     get_location()
-    get_nowday()
+    get_nowdays()
     get_today()
     get_tomorrow()
     return result
