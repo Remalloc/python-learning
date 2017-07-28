@@ -24,12 +24,13 @@ def get_score_in(low, high):
     try:
         cursor.execute('SELECT name FROM ( SELECT * FROM user where score between ? and ? order by score asc)',(low,high))
         fetch=cursor.fetchall()
+        return [x[0] for x in fetch]
     except IOError as e:
         print(e)
     finally:
         cursor.close()
         conn.close()
-    return [x[0] for x in fetch]
+
 
 # 测试:
 assert get_score_in(80, 95) == ['Adam'], get_score_in(80, 95)
